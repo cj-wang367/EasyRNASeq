@@ -1,0 +1,75 @@
+#!/bin/bash
+
+PIPELINE_DIR=$(dirname "$(readlink -f "$0")")
+
+THREADS=8
+RUN_ENRICHMENT="False"
+RUN_WGCNA="False"
+
+print_help() {
+    echo "用法: ./EasyRNASeq -input_dir <数据目录> -reference <转录组fasta> -meta <样本表> -gtf <GTF注释> -ref_group <对照组名称> -out_dir <输出路径>"
+    echo ""
+    echo "必填参数:"
+    echo "  -input_dir   包含 *R1.fastq.gz 和 *R2.fastq.gz 的目录"
+    echo "  -reference   转录组参考序列文件 (FASTA)"
+    echo "  -meta        样本分组信息表"
+    echo "  -gtf         GTF注释文件"
+    echo "  -ref_group   对照组名称 (如 Control)"
+    echo ""
+    echo "高级分析模块 (可选):"
+    echo "  -run_enrichment 启用 GO/KEGG/GSEA 富集分析 (需同时提供 -pep)"
+    echo "  -pep            蛋白质序列文件 (FASTA，用于eggNOG注释)"
+    echo "  -eggnog_db eggNOG数据库所在目录 (若启用 -run_enrichment 则必填)"
+    echo "  -run_wgcna      启用 WGCNA 共表达网络分析"
+    echo ""
+    echo "基础参数:"
+    echo "  -out_dir     输出目录 "
+    echo "  -threads     运行线程数 (默认: 8)"
+    exit 1
+}
+
+OUT_DIR="./EasyRNASeq_Output"
+EGGNOG_DB="" 
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -input_dir) INPUT_DIR=$(realpath "$2"); shift ;;
+        -reference) REF_FASTA=$(realpath "$2"); shift ;;
+        -meta) META_FILE=$(realpath "$2"); shift ;;
+        -gtf) GTF_FILE=$(realpath "$2"); shift ;;
+        -ref_group) REF_GROUP="$2"; shift ;;
+        -run_enrichment) RUN_ENRICHMENT="True" ;;
+        -pep) PEP_FILE=$(realpath "$2"); shift ;;
+	-eggnog_db) EGGNOG_DB=$(realpath "$2"); shift ;;
+        -run_wgcna) RUN_WGCNA="True" ;;
+        -out_dir) OUT_DIR=$(realpath -m "$2"); shift ;;
+        -threads) THREADS="$2"; shift ;;
+        -h|--help) print_help ;;
+        *) echo "错误: 未知参数 $1"; print_help ;;
+    esac
+    shift
+done
+
+# 自动生成 config.yaml
+CONFIG_PATH="$PWD/config.yaml"
+cat <<EOF > "$CONFIG_PATH"
+input_dir: "$INPUT_DIR"
+reference: "$REF_FASTA"
+metadata: "$META_FILE"
+gtf: "$GTF_FILE"
+ref_group: "$REF_GROUP"
+out_dir: "$OUT_DIR"
+threads: $THREADS
+run_enrichment: $RUN_ENRICHMENT
+pep_file: "${PEP_FILE:-None}"
+eggnog_db: "$EGGNOG_DB"
+run_wgcna: $RUN_WGCNA
+EOF
+
+snakemake -s "$PIPELINE_DIR/Snakefile" \
+          --configfile "$CONFIG_PATH" \
+          --use-conda \
+          --conda-prefix "$PIPELINE_DIR/.snakemake/conda" \
+          --cores "$THREADS" \
+          --rerun-incomplete \
+          --printshellcmds

@@ -1,0 +1,7 @@
+name: rna_eggnog
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - eggnog-mapper =2.1.13

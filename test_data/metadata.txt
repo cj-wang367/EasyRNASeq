@@ -1,0 +1,9 @@
+SampleID	condition	batch
+HCK2	Control	1
+HCK3	Control	2
+HCK4	Control	3
+HCK6	Control	4
+HT1	Treat	1
+HT2	Treat	2
+HT4	Treat	3
+HT6	Treat	4

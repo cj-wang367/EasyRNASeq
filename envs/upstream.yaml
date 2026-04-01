@@ -1,0 +1,9 @@
+name: rna_upstream
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - fastp =1.2.0
+  - salmon =1.11.4
+  - multiqc =1.33
